@@ -2,20 +2,15 @@ import { StyleSheet, Button, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '../../context/AuthContext';
-import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import {  Redirect } from 'expo-router';
 
 export default function HomeScreen() {
   const { user, logout } = useAuth();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (!user) {
-      router.replace('/auth/login');
-    }
-  }, [user]);
-
-  if (!user) return null;
+ 
+   if (!user) {
+    return <Redirect href="/auth/login" />;
+  }
 
   return (
     <ThemedView style={styles.container}>
