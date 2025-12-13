@@ -31,37 +31,35 @@ interface ListsContextType {
 
 export const ListsContext = createContext<ListsContextType | undefined>(undefined);
 
+/** Provider component that manages user lists and tasks state */
 export function ListsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [lists, setLists] = useState<List[]>([]);
   const [activeListIndex, setActiveListIndex] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load lists when user changes
   useEffect(() => {
     if (user?.uid) {
       loadLists(user.uid);
     } else {
-      // User logged out, clear lists
       setLists([]);
       setIsLoaded(true);
     }
   }, [user?.uid]);
 
-  // Save lists to AsyncStorage whenever they change
   useEffect(() => {
     if (isLoaded && user?.uid) {
       saveLists(lists, user.uid);
     }
   }, [lists, isLoaded, user?.uid]);
 
+  /** Loads user's lists from local storage and converts dates */
   const loadLists = async (userId: string) => {
     try {
       const storageKey = `user_lists_${userId}`;
       const stored = await AsyncStorage.getItem(storageKey);
       if (stored) {
         const parsedLists = JSON.parse(stored);
-        // Convert date strings back to Date objects
         const listsWithDates = parsedLists.map((list: any) => ({
           ...list,
           tasks: list.tasks.map((task: any) => ({
@@ -84,6 +82,7 @@ export function ListsProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  /** Saves user's lists to local storage */
   const saveLists = async (listsToSave: List[], userId: string) => {
     try {
       const storageKey = `user_lists_${userId}`;
@@ -100,6 +99,7 @@ export function ListsProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Hook to access lists context */
 export function useLists() {
   const context = React.useContext(ListsContext);
   if (!context) {

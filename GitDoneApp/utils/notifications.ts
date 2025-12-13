@@ -2,7 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Task } from '../context/ListsContext';
 
-// Set up notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -13,7 +12,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Request notification permissions
+/** Requests user permission to send notifications */
 export async function requestNotificationPermissions() {
   try {
     const { status } = await Notifications.requestPermissionsAsync();
@@ -24,7 +23,7 @@ export async function requestNotificationPermissions() {
   }
 }
 
-// Store reminder in async storage
+/** Saves task reminder time to local storage */
 export async function saveTaskReminder(taskId: string, reminderTime: Date) {
   try {
     const reminders = await getStoredReminders();
@@ -35,7 +34,7 @@ export async function saveTaskReminder(taskId: string, reminderTime: Date) {
   }
 }
 
-// Get stored reminders
+/** Retrieves all stored task reminders from local storage */
 export async function getStoredReminders() {
   try {
     const stored = await AsyncStorage.getItem('task_reminders');
@@ -46,7 +45,7 @@ export async function getStoredReminders() {
   }
 }
 
-// Set up notification channels (Android)
+/** Configures Android notification channels with sound and vibration settings */
 export async function setupNotificationChannels() {
   try {
     await Notifications.setNotificationChannelAsync('default', {
@@ -62,22 +61,19 @@ export async function setupNotificationChannels() {
   }
 }
 
-// Schedule a notification for a task reminder
+/** Schedules a notification for a task at the specified reminder time */
 export async function scheduleTaskReminder(task: Task, reminderTime: Date) {
   try {
-    // Cancel any existing notification for this task
     try {
       await Notifications.cancelScheduledNotificationAsync(`task-${task.id}`);
     } catch (e) {
-      // Notification might not exist, that's okay
+      return null;
     }
 
-    // If reminder is in the past, don't schedule
     if (reminderTime < new Date()) {
       return null;
     }
 
-    // Calculate seconds until reminder
     const now = new Date();
     const secondsUntilReminder = Math.round((reminderTime.getTime() - now.getTime()) / 1000);
 
@@ -97,12 +93,8 @@ export async function scheduleTaskReminder(task: Task, reminderTime: Date) {
         identifier: `task-${task.id}`,
       });
 
-      // Save reminder to storage
       await saveTaskReminder(task.id, reminderTime);
-
       return notificationId;
-    } else {
-      console.warn(`Calculated seconds until reminder is not positive: ${secondsUntilReminder}`);
     }
   } catch (error) {
     console.error('Error scheduling notification:', error);
@@ -110,8 +102,7 @@ export async function scheduleTaskReminder(task: Task, reminderTime: Date) {
   return null;
 }
 
-
-// Cancel notification for a task
+/** Cancels a scheduled notification for a specific task */
 export async function cancelTaskReminder(taskId: string) {
   try {
     await Notifications.cancelScheduledNotificationAsync(`task-${taskId}`);
@@ -123,7 +114,7 @@ export async function cancelTaskReminder(taskId: string) {
   }
 }
 
-// Get all scheduled notifications
+/** Retrieves all currently scheduled notifications */
 export async function getScheduledNotifications() {
   try {
     return await Notifications.getAllScheduledNotificationsAsync();
@@ -133,7 +124,7 @@ export async function getScheduledNotifications() {
   }
 }
 
-// Get reminder for a specific task
+/** Retrieves the reminder time for a specific task */
 export async function getTaskReminder(taskId: string) {
   try {
     const reminders = await getStoredReminders();
@@ -146,12 +137,11 @@ export async function getTaskReminder(taskId: string) {
   return null;
 }
 
-// Format reminder time for display
+/** Formats a date for display, rounded to the nearest minute */
 export function formatReminderTime(date: Date): string {
   const now = new Date();
   const isSameDay = date.toDateString() === now.toDateString();
   
-  // Round to nearest minute for display consistency with notification timing
   const roundedDate = new Date(Math.round(date.getTime() / 60000) * 60000);
   
   if (isSameDay) {
@@ -161,7 +151,7 @@ export function formatReminderTime(date: Date): string {
   return roundedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
-// Calculate next occurrence date for recurring tasks
+/** Calculates the next occurrence date for a recurring task */
 export function getNextRecurringDate(task: Task, currentDate: Date): Date | null {
   if (!task.recurring || task.recurring === 'none') {
     return null;
@@ -181,7 +171,6 @@ export function getNextRecurringDate(task: Task, currentDate: Date): Date | null
       break;
   }
 
-  // Preserve the time from recurringTime if set
   if (task.recurringTime) {
     nextDate.setHours(task.recurringTime.getHours());
     nextDate.setMinutes(task.recurringTime.getMinutes());
@@ -191,7 +180,7 @@ export function getNextRecurringDate(task: Task, currentDate: Date): Date | null
   return nextDate;
 }
 
-// Reschedule reminder for next recurring task occurrence
+/** Reschedules reminder for the next occurrence of a recurring task */
 export async function rescheduleRecurringReminder(task: Task) {
   try {
     if (!task.recurring || task.recurring === 'none' || !task.reminder) {
@@ -203,7 +192,6 @@ export async function rescheduleRecurringReminder(task: Task) {
       return null;
     }
 
-    // Schedule reminder for next occurrence
     return await scheduleTaskReminder(task, nextDate);
   } catch (error) {
     console.error('Error rescheduling recurring reminder:', error);

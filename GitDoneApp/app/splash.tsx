@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
+/** Splash screen displayed on app launch with team and product information */
 export default function SplashScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -16,7 +17,7 @@ export default function SplashScreen() {
       } else {
         router.replace('/auth/login');
       }
-    }, 3000); // Show splash for 3 seconds
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, [user, router]);

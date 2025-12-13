@@ -1,4 +1,3 @@
-// app/(tabs)/profile.tsx
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -8,6 +7,7 @@ import { Alert, Modal, StyleSheet, TouchableOpacity, View, useColorScheme } from
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
+/** User profile screen with settings and logout functionality */
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { isDarkMode, theme, setTheme } = useTheme();
@@ -15,6 +15,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const [themeModalVisible, setThemeModalVisible] = useState(false);
 
+  /** Shows confirmation alert and logs out user */
   const handleLogout = () => {
     Alert.alert(
       'Log Out',
@@ -35,6 +36,7 @@ export default function ProfileScreen() {
 
   const sectionTextColor = isDarkMode ? '#CCCCCC' : '#666';
 
+  /** Returns emoji label for current theme */
   const getThemeLabel = () => {
     switch(theme) {
       case 'light': return '☀️ Light';
