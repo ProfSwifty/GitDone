@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
-import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Button, Image, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState('');
@@ -24,6 +24,11 @@ export default function SignUpScreen() {
 
   return (
     <View style={styles.container}>
+      <Image 
+        source={require('../../assets/images/cat.png')} 
+        style={styles.logo}
+        resizeMode="contain"
+      />
       <Text style={styles.title}>Create Account</Text>
       <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
       <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
@@ -39,6 +44,7 @@ export default function SignUpScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
+  logo: { width: 200, height: 200, alignSelf: 'center', marginBottom: 20 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
   input: { borderWidth: 1, borderColor: '#ddd', padding: 10, marginBottom: 10, borderRadius: 5 },
 });

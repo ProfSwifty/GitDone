@@ -10,7 +10,7 @@ import { Alert, FlatList, Modal, Platform, Share, StyleSheet, TextInput, Touchab
 import Swiper from 'react-native-swiper';
 import { useAuth } from '../../context/AuthContext';
 import { useLists } from '../../context/ListsContext';
-import { cancelTaskReminder, scheduleTaskReminder } from '../../utils/notifications';
+import { cancelTaskReminder, formatReminderTime, rescheduleRecurringReminder, scheduleTaskReminder } from '../../utils/notifications';
 
 interface Task {
   id: string;
@@ -50,8 +50,9 @@ export default function ListsScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [recurringTime, setRecurringTime] = useState<Date>(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [reminderTime, setReminderTime] = useState<Date | undefined>(undefined);
-  const [showReminderPicker, setShowReminderPicker] = useState(false);
+  const [reminderDate, setReminderDate] = useState<Date | null>(null);
+  const [showReminderDatePicker, setShowReminderDatePicker] = useState(false);
+  const [showReminderTimePicker, setShowReminderTimePicker] = useState(false);
   const [selectedTaskForAction, setSelectedTaskForAction] = useState<{ list: List; task: Task } | null>(null);
   const [homeListModalVisible, setHomeListModalVisible] = useState(false);
 
@@ -95,10 +96,19 @@ export default function ListsScreen() {
   };
 
   const setHomeList = (listId: string) => {
-    setLists(lists.map((list: List) => ({
+    const updatedLists = lists.map((list: List) => ({
       ...list,
       isHome: list.id === listId
-    })));
+    }));
+    
+    // Move home list to front
+    const homeListIndex = updatedLists.findIndex((list: List) => list.isHome);
+    if (homeListIndex > 0) {
+      const homeList = updatedLists.splice(homeListIndex, 1)[0];
+      updatedLists.unshift(homeList);
+    }
+    
+    setLists(updatedLists);
   };
 
   const deleteList = (listId: string) => {
@@ -140,10 +150,19 @@ export default function ListsScreen() {
       priority: taskPriority,
       createdDate: new Date(),
       dueDate: selectedDate && selectedDate.getTime() !== new Date().getTime() ? selectedDate : undefined,
+      reminder: reminderDate || undefined,
       recurring: taskRecurring,
       recurringTime: taskRecurring !== 'none' ? recurringTime : undefined,
-      reminder: reminderTime,
     };
+
+    // Schedule reminder if set (30 minutes before the reminder time)
+    if (reminderDate) {
+      const notificationTime = new Date(reminderDate.getTime() - 30 * 60 * 1000);
+      // Only schedule if notification time is in the future (at least 1 minute from now)
+      if (notificationTime > new Date(Date.now() + 60000)) {
+        scheduleTaskReminder(newTask, notificationTime);
+      }
+    }
 
     setLists(lists.map((list: List) => 
       list.id === listId 
@@ -153,18 +172,13 @@ export default function ListsScreen() {
           })}
         : list
     ));
-
-    // Schedule notification if reminder is set
-    if (reminderTime) {
-      scheduleTaskReminder(newTask, reminderTime);
-    }
     
     setNewTaskText('');
     setTaskPriority('medium');
     setTaskRecurring('none');
     setSelectedDate(new Date());
     setRecurringTime(new Date());
-    setReminderTime(undefined);
+    setReminderDate(null);
     setTaskModalVisible(false);
   };
 
@@ -172,22 +186,35 @@ export default function ListsScreen() {
     const listId = lists[activeListIndex]?.id;
     if (!listId || !editingTask || !newTaskText.trim()) return;
 
+    const updatedTask: Task = {
+      ...editingTask,
+      title: newTaskText,
+      priority: taskPriority,
+      dueDate: selectedDate && selectedDate.getTime() !== new Date().getTime() ? selectedDate : undefined,
+      reminder: reminderDate || undefined,
+      recurring: taskRecurring,
+      recurringTime: taskRecurring !== 'none' ? recurringTime : undefined,
+    };
+
+    // Update reminder (30 minutes before the reminder time)
+    if (reminderDate) {
+      const notificationTime = new Date(reminderDate.getTime() - 30 * 60 * 1000);
+      // Only schedule if notification time is in the future (at least 1 minute from now)
+      if (notificationTime > new Date(Date.now() + 60000)) {
+        scheduleTaskReminder(updatedTask, notificationTime);
+      } else {
+        cancelTaskReminder(editingTask.id);
+      }
+    } else {
+      cancelTaskReminder(editingTask.id);
+    }
+
     setLists(lists.map((list: List) => 
       list.id === listId 
         ? { 
             ...list, 
             tasks: list.tasks.map((task: Task) => 
-              task.id === editingTask.id 
-                ? { 
-                    ...task, 
-                    title: newTaskText,
-                    priority: taskPriority,
-                    dueDate: selectedDate && selectedDate.getTime() !== new Date().getTime() ? selectedDate : undefined,
-                    recurring: taskRecurring,
-                    recurringTime: taskRecurring !== 'none' ? recurringTime : undefined,
-                    reminder: reminderTime,
-                  }
-                : task
+              task.id === editingTask.id ? updatedTask : task
             ).sort((a: Task, b: Task) => {
               const priorityOrder = { high: 0, medium: 1, low: 2 };
               return priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -196,35 +223,38 @@ export default function ListsScreen() {
         : list
     ));
 
-    // Update notification for the task
-    if (reminderTime) {
-      const updatedTask = { ...editingTask, reminder: reminderTime };
-      scheduleTaskReminder(updatedTask, reminderTime);
-    } else {
-      cancelTaskReminder(editingTask.id);
-    }
-
     setEditingTask(null);
     setNewTaskText('');
     setTaskPriority('medium');
     setTaskRecurring('none');
     setSelectedDate(new Date());
     setRecurringTime(new Date());
-    setReminderTime(undefined);
+    setReminderDate(null);
     setTaskModalVisible(false);
   };
 
   const toggleTask = (listId: string, taskId: string) => {
-    setLists(lists.map((list: List) => 
+    const updatedLists = lists.map((list: List) => 
       list.id === listId 
         ? { 
             ...list, 
-            tasks: list.tasks.map((task: Task) => 
-              task.id === taskId ? { ...task, completed: !task.completed } : task
-            )
+            tasks: list.tasks.map((task: Task) => {
+              if (task.id === taskId) {
+                const updatedTask = { ...task, completed: !task.completed };
+                
+                // If task is being marked complete and it's recurring with a reminder, reschedule for next occurrence
+                if (updatedTask.completed && task.recurring && task.recurring !== 'none' && task.reminder) {
+                  rescheduleRecurringReminder(task);
+                }
+                
+                return updatedTask;
+              }
+              return task;
+            })
           }
         : list
-    ));
+    );
+    setLists(updatedLists);
   };
 
   const deleteTask = (listId: string, taskId: string) => {
@@ -269,24 +299,13 @@ export default function ListsScreen() {
     if (!list) return null;
     return (
       <View style={[styles.listHeader, { backgroundColor: list.color }]}>
-        <View>
+        <View style={styles.titleSection}>
           <ThemedText style={styles.listTitle}>{list.title}</ThemedText>
           {list.isHome && <ThemedText style={styles.homeLabel}>Home List</ThemedText>}
         </View>
         <View style={styles.headerButtons}>
-          <TouchableOpacity onPress={() => setHomeListModalVisible(true)}>
-            <IconSymbol name={list.isHome ? "star.fill" : "star"} size={24} color="#FFF" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => {
-            setEditingList(list);
-            setNewListTitle(list.title);
-            setSelectedColor(list.color);
-            setModalVisible(true);
-          }}>
-            <IconSymbol name="pencil" size={24} color="#FFF" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => deleteList(list.id)}>
-            <IconSymbol name="trash" size={24} color="#FFF" />
+          <TouchableOpacity onPress={() => setHomeListModalVisible(true)} style={styles.setHomeBtn}>
+            <ThemedText style={styles.starEmoji}>{list.isHome ? '⭐' : '☆'}</ThemedText>
           </TouchableOpacity>
         </View>
       </View>
@@ -313,6 +332,11 @@ export default function ListsScreen() {
               Due: {formatDate(task.dueDate)}
             </ThemedText>
           )}
+          {task.reminder && (
+            <ThemedText style={styles.reminderLabel}>
+              🔔 Notification: {formatReminderTime(new Date(task.reminder.getTime() - 30 * 60 * 1000))}
+            </ThemedText>
+          )}
           {task.recurring !== 'none' && (
             <ThemedText style={styles.recurringLabel}>
               Repeats: {task.recurring}{task.recurringTime ? ` at ${task.recurringTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
@@ -326,7 +350,7 @@ export default function ListsScreen() {
           setTaskRecurring(task.recurring || 'none');
           setSelectedDate(task.dueDate || new Date());
           setRecurringTime(task.recurringTime || new Date());
-          setReminderTime(task.reminder || undefined);
+          setReminderDate(task.reminder || null);
           setTaskModalVisible(true);
         }}>
           <IconSymbol name="pencil" size={18} color="#666" />
@@ -371,6 +395,9 @@ export default function ListsScreen() {
                 setTaskPriority('medium');
                 setTaskRecurring('none');
                 setSelectedDate(new Date());
+                setReminderDate(null);
+                setShowReminderDatePicker(false);
+                setShowReminderTimePicker(false);
                 setTaskModalVisible(true);
               }}
             >
@@ -431,6 +458,18 @@ export default function ListsScreen() {
         ) : (
           <ThemedView style={styles.emptyContainer}>
             <ThemedText style={styles.emptyText}>No lists yet. Create one to get started!</ThemedText>
+            <TouchableOpacity 
+              style={[styles.addListBtnCenter, { backgroundColor: '#4A90E2' }]}
+              onPress={() => {
+                setEditingList(null);
+                setNewListTitle('');
+                setSelectedColor('#4A90E2');
+                setModalVisible(true);
+              }}
+            >
+              <IconSymbol name="plus" size={24} color="#FFF" />
+              <ThemedText style={styles.addListBtnText}>Add List</ThemedText>
+            </TouchableOpacity>
           </ThemedView>
         )}
       </View>
@@ -597,25 +636,62 @@ export default function ListsScreen() {
               />
             )}
 
-            <ThemedText style={styles.colorLabel}>Reminder Time:</ThemedText>
+            <ThemedText style={styles.colorLabel}>Reminder (Optional):</ThemedText>
             <TouchableOpacity 
               style={[styles.dateBtn, { backgroundColor: isDarkMode ? '#1F1F1F' : '#f0f0f0' }]}
-              onPress={() => setShowReminderPicker(true)}
+              onPress={() => setShowReminderDatePicker(true)}
             >
               <IconSymbol name="bell" size={20} color={isDarkMode ? '#ECEDEE' : '#11181C'} />
-              <ThemedText>{reminderTime ? reminderTime.toLocaleString() : 'Set reminder'}</ThemedText>
+              <ThemedText>{reminderDate ? formatReminderTime(reminderDate) : 'Set Reminder'}</ThemedText>
             </TouchableOpacity>
 
-            {showReminderPicker && (
+            {showReminderDatePicker && (
               <DateTimePicker
-                value={reminderTime || new Date()}
-                mode="datetime"
+                value={reminderDate || (() => {
+                  const tomorrow = new Date();
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  tomorrow.setHours(9, 0, 0, 0);
+                  return tomorrow;
+                })()}
+                mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, time) => {
-                  if (time) setReminderTime(time);
-                  if (Platform.OS !== 'ios') setShowReminderPicker(false);
+                onChange={(event, date) => {
+                  if (date) {
+                    const updatedDate = new Date(date);
+                    updatedDate.setHours(9, 0, 0, 0);
+                    setReminderDate(updatedDate);
+                    setShowReminderTimePicker(true);
+                  }
+                  setShowReminderDatePicker(false);
                 }}
               />
+            )}
+
+            {reminderDate && showReminderTimePicker && (
+              <DateTimePicker
+                value={reminderDate}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, date) => {
+                  if (date) {
+                    // Create a new date combining the existing date with the new time
+                    const newDate = new Date(reminderDate);
+                    newDate.setHours(date.getHours(), date.getMinutes(), date.getSeconds());
+                    setReminderDate(newDate);
+                  }
+                  setShowReminderTimePicker(false);
+                }}
+              />
+            )}
+
+            {reminderDate && (
+              <TouchableOpacity 
+                style={[styles.clearReminderBtn, { borderColor: '#FF6B6B' }]}
+                onPress={() => setReminderDate(null)}
+              >
+                <IconSymbol name="xmark.circle" size={16} color="#FF6B6B" />
+                <ThemedText style={styles.clearReminderText}>Clear Reminder</ThemedText>
+              </TouchableOpacity>
             )}
 
             <View style={styles.modalButtons}>
@@ -798,6 +874,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 30,
+  },
+  addListBtnCenter: {
+    flexDirection: 'row',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  addListBtnText: {
+    color: '#FFF',
+    fontWeight: '600',
+    fontSize: 18,
   },
   listContainer: {
     flex: 1,
@@ -814,6 +905,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFF',
   },
+  titleSection: {
+    flex: 1,
+  },
+  setHomeBtn: {
+    padding: 8,
+  },
+  starEmoji: {
+    fontSize: 28,
+  },
   homeLabel: {
     fontSize: 12,
     color: '#FFF',
@@ -824,6 +924,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 15,
     paddingHorizontal: 10,
+    alignItems: 'center',
   },
   taskList: {
     flex: 1,
@@ -1094,5 +1195,25 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: '600',
     fontSize: 16,
+  },
+  reminderLabel: {
+    fontSize: 12,
+    color: '#FF6B6B',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  clearReminderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderRadius: 8,
+  },
+  clearReminderText: {
+    fontSize: 14,
+    color: '#FF6B6B',
   },
 });

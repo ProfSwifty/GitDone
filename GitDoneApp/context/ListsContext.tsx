@@ -1,4 +1,6 @@
-import React, { createContext, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useEffect, useState } from 'react';
+import { useAuth } from './AuthContext';
 
 export interface Task {
   id: string;
@@ -30,17 +32,66 @@ interface ListsContextType {
 export const ListsContext = createContext<ListsContextType | undefined>(undefined);
 
 export function ListsProvider({ children }: { children: React.ReactNode }) {
-  const [lists, setLists] = useState<List[]>([
-    { id: '1', title: 'Work', color: '#4A90E2', isHome: true, tasks: [
-      { id: '1-1', title: 'Finish project report', completed: false, priority: 'high', createdDate: new Date(), recurring: 'none' },
-      { id: '1-2', title: 'Team meeting', completed: true, priority: 'medium', createdDate: new Date(), recurring: 'none' },
-    ] },
-    { id: '2', title: 'Shopping', color: '#50C878', isHome: false, tasks: [
-      { id: '2-1', title: 'Milk', completed: false, priority: 'low', createdDate: new Date(), recurring: 'weekly' },
-    ] },
-  ]);
-  
+  const { user } = useAuth();
+  const [lists, setLists] = useState<List[]>([]);
   const [activeListIndex, setActiveListIndex] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load lists when user changes
+  useEffect(() => {
+    if (user?.uid) {
+      loadLists(user.uid);
+    } else {
+      // User logged out, clear lists
+      setLists([]);
+      setIsLoaded(true);
+    }
+  }, [user?.uid]);
+
+  // Save lists to AsyncStorage whenever they change
+  useEffect(() => {
+    if (isLoaded && user?.uid) {
+      saveLists(lists, user.uid);
+    }
+  }, [lists, isLoaded, user?.uid]);
+
+  const loadLists = async (userId: string) => {
+    try {
+      const storageKey = `user_lists_${userId}`;
+      const stored = await AsyncStorage.getItem(storageKey);
+      if (stored) {
+        const parsedLists = JSON.parse(stored);
+        // Convert date strings back to Date objects
+        const listsWithDates = parsedLists.map((list: any) => ({
+          ...list,
+          tasks: list.tasks.map((task: any) => ({
+            ...task,
+            dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+            createdDate: new Date(task.createdDate),
+            reminder: task.reminder ? new Date(task.reminder) : undefined,
+            recurringTime: task.recurringTime ? new Date(task.recurringTime) : undefined,
+          })),
+        }));
+        setLists(listsWithDates);
+      } else {
+        setLists([]);
+      }
+    } catch (error) {
+      console.error('Error loading lists:', error);
+      setLists([]);
+    } finally {
+      setIsLoaded(true);
+    }
+  };
+
+  const saveLists = async (listsToSave: List[], userId: string) => {
+    try {
+      const storageKey = `user_lists_${userId}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify(listsToSave));
+    } catch (error) {
+      console.error('Error saving lists:', error);
+    }
+  };
 
   return (
     <ListsContext.Provider value={{ lists, setLists, activeListIndex, setActiveListIndex }}>

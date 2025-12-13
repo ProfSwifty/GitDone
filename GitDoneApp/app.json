@@ -51,6 +51,12 @@
         "projectId": "ceb3bbd6-b963-49b2-aae2-1657453338ba"
       }
     },
-    "owner": "profswifty"
+    "owner": "profswifty",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ceb3bbd6-b963-49b2-aae2-1657453338ba"
+    }
   }
 }

@@ -8,10 +8,10 @@ import 'react-native-reanimated';
 import { AuthProvider } from '../context/AuthContext';
 import { ListsProvider } from '../context/ListsContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
-import { requestNotificationPermissions } from '../utils/notifications';
+import { requestNotificationPermissions, setupNotificationChannels } from '../utils/notifications';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  anchor: 'splash',
 };
 
 export default function RootLayout() {
@@ -32,11 +32,13 @@ function ThemedApp() {
 
   useEffect(() => {
     requestNotificationPermissions();
+    setupNotificationChannels();
   }, []);
 
   return (
     <NavigationThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen name="splash" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth/login" options={{ title: 'Login' }} />
         <Stack.Screen name="auth/signup" options={{ title: 'Sign Up' }} />
