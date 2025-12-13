@@ -14,7 +14,7 @@ export default function LoginScreen() {
       await login(email, password);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert('Error Logging In', 'Please enter Login details.');
     }
   };
 
