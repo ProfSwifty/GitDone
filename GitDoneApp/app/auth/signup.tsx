@@ -3,12 +3,14 @@ import React, { useState } from 'react';
 import { Alert, Button, Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 
+/** Sign up screen for creating new user accounts */
 export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { signUp } = useAuth();
   const router = useRouter();
 
+  /** Validates password length and creates new user account, then navigates to main app */
   const handleSignUp = async () => {
   if (password.length < 6) {
     Alert.alert('Error', 'Password must be at least 6 characters');

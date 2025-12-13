@@ -1,4 +1,3 @@
-// app/(tabs)/priority.tsx
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -6,6 +5,7 @@ import React, { useMemo, useState } from 'react';
 import { Alert, FlatList, Modal, StyleSheet, TouchableOpacity, View, useColorScheme } from 'react-native';
 import { List, Task, useLists } from '../../context/ListsContext';
 
+/** Screen displaying high-priority tasks from all lists */
 export default function PriorityScreen() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
@@ -13,6 +13,7 @@ export default function PriorityScreen() {
   const { lists, setLists } = useLists();
   const [selectedTask, setSelectedTask] = useState<(Task & { listId: string; listTitle: string }) | null>(null);
   
+  /** Filters and collects all high-priority tasks from all lists */
   const priorityTasks = useMemo(() => {
     const tasks: (Task & { listId: string; listTitle: string })[] = [];
     lists.forEach(list => {
@@ -29,6 +30,7 @@ export default function PriorityScreen() {
     return tasks;
   }, [lists]);
 
+  /** Toggles task completion status */
   const toggleTask = (listId: string, taskId: string) => {
     setLists(lists.map((list: List) => 
       list.id === listId
@@ -42,6 +44,7 @@ export default function PriorityScreen() {
     ));
   };
 
+  /** Deletes a task with confirmation */
   const deleteTask = (listId: string, taskId: string) => {
     Alert.alert(
       'Delete Task',

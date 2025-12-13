@@ -3,12 +3,14 @@ import React, { useState } from 'react';
 import { Alert, Button, Image, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 
+/** Login screen for authenticating existing users */
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login } = useAuth();
   const router = useRouter();
 
+  /** Authenticates user with email and password, then navigates to main app */
   const handleLogin = async () => {
     try {
       await login(email, password);

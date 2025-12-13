@@ -9,6 +9,7 @@ import { Collapsible } from '@/components/ui/collapsible';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
 
+/** Explore screen displaying app information and documentation */
 export default function ExploreScreen() {
   return (
     <ParallaxScrollView

@@ -1,4 +1,3 @@
-// app/(tabs)/index.tsx
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -32,6 +31,7 @@ interface List {
   isHome?: boolean;
 }
 
+/** Main lists screen with task and list management functionality */
 export default function ListsScreen() {
   const { user, logout } = useAuth();
   const colorScheme = useColorScheme();
@@ -62,6 +62,7 @@ export default function ListsScreen() {
     return <Redirect href="/auth/login" />;
   }
 
+  /** Creates a new list with the entered title and color */
   const createList = () => {
     if (!newListTitle.trim()) {
       Alert.alert('Error', 'Please enter a list name');
@@ -81,6 +82,7 @@ export default function ListsScreen() {
     setModalVisible(false);
   };
 
+  /** Updates the currently edited list title and color */
   const updateList = () => {
     if (!editingList || !newListTitle.trim()) return;
 
@@ -95,13 +97,13 @@ export default function ListsScreen() {
     setModalVisible(false);
   };
 
+  /** Sets the specified list as the home list and moves it to the front */
   const setHomeList = (listId: string) => {
     const updatedLists = lists.map((list: List) => ({
       ...list,
       isHome: list.id === listId
     }));
     
-    // Move home list to front
     const homeListIndex = updatedLists.findIndex((list: List) => list.isHome);
     if (homeListIndex > 0) {
       const homeList = updatedLists.splice(homeListIndex, 1)[0];
@@ -111,6 +113,7 @@ export default function ListsScreen() {
     setLists(updatedLists);
   };
 
+  /** Deletes a list with confirmation alert after adjustment of active list index */
   const deleteList = (listId: string) => {
     Alert.alert(
       'Delete List',
@@ -139,6 +142,7 @@ export default function ListsScreen() {
     );
   };
 
+  /** Adds a new task to the active list and schedules reminder notification if set */
   const addTask = () => {
     const listId = lists[activeListIndex]?.id;
     if (!listId || !newTaskText.trim()) return;
@@ -155,10 +159,8 @@ export default function ListsScreen() {
       recurringTime: taskRecurring !== 'none' ? recurringTime : undefined,
     };
 
-    // Schedule reminder if set (30 minutes before the reminder time)
     if (reminderDate) {
       const notificationTime = new Date(reminderDate.getTime() - 30 * 60 * 1000);
-      // Only schedule if notification time is in the future (at least 1 minute from now)
       if (notificationTime > new Date(Date.now() + 60000)) {
         scheduleTaskReminder(newTask, notificationTime);
       }
@@ -182,6 +184,7 @@ export default function ListsScreen() {
     setTaskModalVisible(false);
   };
 
+  /** Updates the currently edited task and reschedules reminder notification if applicable */
   const updateTask = () => {
     const listId = lists[activeListIndex]?.id;
     if (!listId || !editingTask || !newTaskText.trim()) return;
@@ -196,10 +199,8 @@ export default function ListsScreen() {
       recurringTime: taskRecurring !== 'none' ? recurringTime : undefined,
     };
 
-    // Update reminder (30 minutes before the reminder time)
     if (reminderDate) {
       const notificationTime = new Date(reminderDate.getTime() - 30 * 60 * 1000);
-      // Only schedule if notification time is in the future (at least 1 minute from now)
       if (notificationTime > new Date(Date.now() + 60000)) {
         scheduleTaskReminder(updatedTask, notificationTime);
       } else {
@@ -233,6 +234,7 @@ export default function ListsScreen() {
     setTaskModalVisible(false);
   };
 
+  /** Toggles task completion status and reschedules recurring reminders if applicable */
   const toggleTask = (listId: string, taskId: string) => {
     const updatedLists = lists.map((list: List) => 
       list.id === listId 
@@ -242,7 +244,6 @@ export default function ListsScreen() {
               if (task.id === taskId) {
                 const updatedTask = { ...task, completed: !task.completed };
                 
-                // If task is being marked complete and it's recurring with a reminder, reschedule for next occurrence
                 if (updatedTask.completed && task.recurring && task.recurring !== 'none' && task.reminder) {
                   rescheduleRecurringReminder(task);
                 }
@@ -257,8 +258,8 @@ export default function ListsScreen() {
     setLists(updatedLists);
   };
 
+  /** Deletes a task and cancels its notification */
   const deleteTask = (listId: string, taskId: string) => {
-    // Cancel notification for this task
     cancelTaskReminder(taskId);
     
     setLists(lists.map((list: List) => 
@@ -268,6 +269,7 @@ export default function ListsScreen() {
     ));
   };
 
+  /** Returns color code for priority level */
   const getPriorityColor = (priority: string) => {
     switch(priority) {
       case 'high': return '#FF6B6B';
@@ -277,11 +279,13 @@ export default function ListsScreen() {
     }
   };
 
+  /** Formats a date to locale string showing month, day, and year */
   const formatDate = (date: Date | undefined) => {
     if (!date) return '';
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  /** Shares list content via system share menu */
   const shareList = async (list: List) => {
     try {
       const listContent = `List: ${list.title}\n\nTasks:\n${list.tasks.map(task => `- ${task.title} ${task.completed ? '✓' : ''}`).join('\n')}`;
@@ -295,6 +299,7 @@ export default function ListsScreen() {
     }
   };
 
+  /** Renders the header section with list title, home indicator, and home button */
   const renderListHeader = (list: List | undefined) => {
     if (!list) return null;
     return (
@@ -312,6 +317,7 @@ export default function ListsScreen() {
     );
   };
 
+  /** Renders individual task item with completion status, priority, due date, reminder, and action buttons */
   const renderTaskItem = (list: List, task: Task) => (
     <TouchableOpacity onPress={() => setSelectedTaskForAction({ list, task })}>
       <ThemedView style={styles.taskItem}>
@@ -375,6 +381,7 @@ export default function ListsScreen() {
     </TouchableOpacity>
   );
 
+  /** Renders a complete list with task items, footer with action buttons */
   const renderList = (list: List) => (
     <View style={styles.listContainer} key={list.id}>
       <FlatList

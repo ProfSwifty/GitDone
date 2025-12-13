@@ -1,4 +1,3 @@
-// app/_layout.tsx
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +13,7 @@ export const unstable_settings = {
   anchor: 'splash',
 };
 
+/** Root layout component that wraps all providers and navigation */
 export default function RootLayout() {
   return (
     <ThemeProvider>
@@ -27,6 +27,7 @@ export default function RootLayout() {
   );
 }
 
+/** Main app component that sets up navigation and initializes notifications */
 function ThemedApp() {
   const { isDarkMode } = useTheme();
 

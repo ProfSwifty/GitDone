@@ -5,13 +5,15 @@ import { Task, useLists } from '@/context/ListsContext';
 import React, { useMemo } from 'react';
 import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+/** Screen displaying upcoming tasks sorted by due date */
 export default function UpcomingScreen() {
   const { lists } = useLists();
 
+  /** Filters and sorts incomplete tasks with due dates */
   const upcomingTasks = useMemo(() => {
     const allTasks: any[] = [];
     lists.forEach(list => {
-      if (list.id !== 'priority') { // Exclude priority list from upcoming
+      if (list.id !== 'priority') {
         list.tasks.forEach(task => {
           if (task.dueDate && !task.completed) {
             allTasks.push({
@@ -29,6 +31,7 @@ export default function UpcomingScreen() {
     });
   }, [lists]);
 
+  /** Returns color based on task priority */
   const getPriorityColor = (priority: string) => {
     switch(priority) {
       case 'high': return '#FF6B6B';
@@ -38,6 +41,7 @@ export default function UpcomingScreen() {
     }
   };
 
+  /** Calculates days until task due date */
   const daysUntil = (date: Date | undefined) => {
     if (!date) return null;
     const today = new Date();
