@@ -12,15 +12,24 @@ export default function SignUpScreen() {
 
   /** Validates password length and creates new user account, then navigates to main app */
   const handleSignUp = async () => {
+ 
+  
   if (password.length < 6) {
-    Alert.alert('Error', 'Password must be at least 6 characters');
+    Alert.alert('Error', 'Enter a password of atleast 6 characters.');
     return;
   }
   try {
     await signUp(email, password);
     router.replace('/(tabs)');
   } catch (error: any) {
-    Alert.alert('Error', error.message);
+    if (error.code === 'auth/email-already-in-use') {
+      Alert.alert('Error', 'Account with this email already exists.');
+    } else if (error.code === 'auth/invalid-email') {
+      Alert.alert('Error', 'Invalid email address.');
+    } else {
+      Alert.alert('Error', 'Please enter all details.');
+    }
+    
   }
 };
 
@@ -38,7 +47,7 @@ export default function SignUpScreen() {
       <Button title="Sign Up" onPress={handleSignUp} />
       </View>
       <View style={{ marginTop: 20 }}>
-      <Button title="Login" onPress={() => router.push('/auth/login')} />
+      <Button title="Back" onPress={() => router.push('/auth/login')} />
       </View>
     </View>
   );

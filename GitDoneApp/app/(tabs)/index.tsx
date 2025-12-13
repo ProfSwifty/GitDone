@@ -80,6 +80,9 @@ export default function ListsScreen() {
     setLists([...lists, newList]);
     setNewListTitle('');
     setModalVisible(false);
+    setActiveListIndex(updateList.length - 1);
+
+    
   };
 
   /** Updates the currently edited list title and color */

@@ -181,6 +181,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 15,
+    marginTop: 25,
   },
   avatarDark: {
     backgroundColor: '#2C5282',
@@ -189,9 +190,12 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: '#FFF',
+    
   },
   name: {
     textAlign: 'center',
+    paddingBottom: 10,
+    
   },
   section: {
     marginBottom: 30,
