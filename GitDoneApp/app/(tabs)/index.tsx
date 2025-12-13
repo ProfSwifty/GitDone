@@ -79,6 +79,9 @@ export default function ListsScreen() {
     setLists([...lists, newList]);
     setNewListTitle('');
     setModalVisible(false);
+    setActiveListIndex(updateList.length - 1);
+
+    
   };
 
   const updateList = () => {
