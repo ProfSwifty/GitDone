@@ -15,7 +15,7 @@ export default function SignUpScreen() {
  
   
   if (password.length < 6) {
-    Alert.alert('Error', 'Enter a password of atleast 6 characters.');
+    Alert.alert('Error', 'Enter a password of at least 6 characters.');
     return;
   }
   try {
