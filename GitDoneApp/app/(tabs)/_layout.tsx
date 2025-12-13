@@ -33,6 +33,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="upcoming"
+        options={{
+          title: 'Upcoming',
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="event" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="priority"
         options={{
           title: 'Priority',

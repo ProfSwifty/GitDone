@@ -2,50 +2,14 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { Alert, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
-  const { theme, setTheme, isDarkMode } = useTheme();
-  const [notifications, setNotifications] = useState(true);
-
-  // Load saved preferences
-  useEffect(() => {
-    loadPreferences();
-  }, []);
-
-  // Update dark mode when theme changes
-  useEffect(() => {
-    // Theme is now managed by ThemeContext
-  }, [isDarkMode]);
-
-  const loadPreferences = async () => {
-    try {
-      const savedNotifications = await AsyncStorage.getItem('notifications');
-      if (savedNotifications !== null) {
-        setNotifications(savedNotifications === 'true');
-      }
-    } catch (error) {
-      console.error('Error loading preferences:', error);
-    }
-  };
-
-  const handleThemeChange = (value: string) => {
-    setTheme(value as 'light' | 'dark' | 'system');
-  };
-
-  const handleNotificationsToggle = async (value: boolean) => {
-    setNotifications(value);
-    try {
-      await AsyncStorage.setItem('notifications', value.toString());
-    } catch (error) {
-      console.error('Error saving notifications preference:', error);
-    }
-  };
+  const { isDarkMode } = useTheme();
 
   const handleLogout = () => {
     Alert.alert(
@@ -58,10 +22,7 @@ export default function ProfileScreen() {
     );
   };
 
-  // Determine icon colors based on theme
-  const iconColor = isDarkMode ? '#CCCCCC' : '#666';
   const sectionTextColor = isDarkMode ? '#CCCCCC' : '#666';
-  const borderColor = isDarkMode ? '#333' : '#E0E0E0';
 
   return (
     <ThemedView style={styles.container}>
@@ -72,93 +33,6 @@ export default function ProfileScreen() {
           </ThemedText>
         </View>
         <ThemedText type="title" style={styles.name}>{user?.email}</ThemedText>
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText type="subtitle" style={[styles.sectionTitle, { color: sectionTextColor }]}>
-          Settings
-        </ThemedText>
-        
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <View style={styles.settingLeft}>
-            <IconSymbol name="paintbrush.fill" size={24} color={iconColor} />
-            <ThemedText style={[styles.settingText, { color: sectionTextColor }]}>
-              Theme
-            </ThemedText>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity 
-              onPress={() => handleThemeChange('light')}
-              style={[
-                styles.themeOption, 
-                theme === 'light' && styles.themeOptionActive,
-                { backgroundColor: theme === 'light' ? '#4A90E2' : (isDarkMode ? '#2a2a2a' : '#f0f0f0') }
-              ]}
-            >
-              <ThemedText style={[
-                styles.themeOptionText,
-                theme === 'light' && styles.themeOptionTextActive
-              ]}>
-                Light
-              </ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => handleThemeChange('dark')}
-              style={[
-                styles.themeOption, 
-                theme === 'dark' && styles.themeOptionActive,
-                { backgroundColor: theme === 'dark' ? '#4A90E2' : (isDarkMode ? '#2a2a2a' : '#f0f0f0') }
-              ]}
-            >
-              <ThemedText style={[
-                styles.themeOptionText,
-                theme === 'dark' && styles.themeOptionTextActive
-              ]}>
-                Dark
-              </ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => handleThemeChange('system')}
-              style={[
-                styles.themeOption, 
-                theme === 'system' && styles.themeOptionActive,
-                { backgroundColor: theme === 'system' ? '#4A90E2' : (isDarkMode ? '#2a2a2a' : '#f0f0f0') }
-              ]}
-            >
-              <ThemedText style={[
-                styles.themeOptionText,
-                theme === 'system' && styles.themeOptionTextActive
-              ]}>
-                System
-              </ThemedText>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <View style={styles.settingLeft}>
-            <IconSymbol name="bell.fill" size={24} color={iconColor} />
-            <ThemedText style={[styles.settingText, { color: sectionTextColor }]}>
-              Notifications
-            </ThemedText>
-          </View>
-          <Switch 
-            value={notifications} 
-            onValueChange={handleNotificationsToggle}
-            trackColor={{ false: '#767577', true: '#4A90E2' }}
-            thumbColor={notifications ? '#fff' : '#f4f3f4'}
-          />
-        </View>
-
-        <TouchableOpacity style={[styles.settingItem, { borderBottomColor: borderColor }]}>
-          <View style={styles.settingLeft}>
-            <IconSymbol name="person.crop.circle" size={24} color={iconColor} />
-            <ThemedText style={[styles.settingText, { color: sectionTextColor }]}>
-              Edit Profile
-            </ThemedText>
-          </View>
-          <IconSymbol name="chevron.right" size={20} color={iconColor} />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
@@ -241,21 +115,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 'auto',
     paddingVertical: 20,
-  },
-  themeOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  themeOptionActive: {
-    backgroundColor: '#4A90E2',
-  },
-  themeOptionText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  themeOptionTextActive: {
-    color: '#FFF',
-    fontWeight: 'bold',
   },
 });

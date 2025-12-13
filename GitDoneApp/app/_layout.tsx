@@ -2,10 +2,13 @@
 import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '../context/AuthContext';
+import { ListsProvider } from '../context/ListsContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
+import { requestNotificationPermissions } from '../utils/notifications';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -15,7 +18,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <ThemedApp />
+        <ListsProvider>
+          <ThemedApp />
+        </ListsProvider>
         <StatusBar style="auto" />
       </AuthProvider>
     </ThemeProvider>
@@ -24,6 +29,10 @@ export default function RootLayout() {
 
 function ThemedApp() {
   const { isDarkMode } = useTheme();
+
+  useEffect(() => {
+    requestNotificationPermissions();
+  }, []);
 
   return (
     <NavigationThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
